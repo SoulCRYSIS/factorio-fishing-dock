@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+This project is a factorio planet mod.
+Designed to run on factorio version 2.0 with space-age DLC.
+Since factorio 2.0 API is quite new, if you use your knowledge and it not working, please research in the api docs
+- prototypes: https://lua-api.factorio.com/stable/index-prototype.html
+- runtime: https://lua-api.factorio.com/stable/index-runtime.html
+- others are rarely use, so you don't need to care much, but it in the doc home
+
+
