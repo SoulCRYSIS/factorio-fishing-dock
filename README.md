@@ -20,32 +20,32 @@ If you want to add your type of fish, it super easy
 
 1. Add your fish item and entity like normal
 2. Use util (or just copy the inside code if you want more adjustment)
-  ```
-  local fishing_utils = require("__fishing-dock__.prototypes.utils")
+```
+local fishing_utils = require("__fishing-dock__.prototypes.utils")
 
-  fishing_utils.create_fishing_content({
-    name = "fish",
-    icon = "__base__/graphics/icons/fish.png",
-    energy = 10, -- Spawn cooldown
-    order = "a",
-    ingredients = {
-      {type = "item", name = "biter-egg", amount = 1}
-    },
-  })
-  ```
+fishing_utils.create_fishing_content({
+  name = "fish",
+  icon = "__base__/graphics/icons/fish.png",
+  energy = 10, -- Spawn cooldown
+  order = "a",
+  ingredients = {
+    {type = "item", name = "biter-egg", amount = 1}
+  },
+})
+```
 3. In control side, add fish entity and spawnable tiles. Usually in on_init.
-  ```
-  local function on_init()
-    storage.fish_spawn_registry["fish"] = {
-      "water",
-      "deepwater",
-      "water-green",
-      "deepwater-green",
-      "water-shallow",
-      "deepwater-shallow",
-    }
-  end
+```
+local function on_init()
+  storage.fish_spawn_registry["fish"] = {
+    "water",
+    "deepwater",
+    "water-green",
+    "deepwater-green",
+    "water-shallow",
+    "deepwater-shallow",
+  }
+end
 
-  script.on_init(on_init)
-  ```
+script.on_init(on_init)
+```
 4. Done!!
