@@ -6,12 +6,8 @@ data:extend({
     icon_size = 256,
     prerequisites = { "captivity", "fish-breeding" },
     unit = {
-      count = 500,
+      count = 1000,
       ingredients = {
-        { "automation-science-pack",   1 },
-        { "logistic-science-pack",     1 },
-        { "chemical-science-pack",     1 },
-        { "military-science-pack",     1 },
         { "space-science-pack",        1 },
         { "agricultural-science-pack", 1 }
       },

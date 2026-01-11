@@ -51,7 +51,7 @@ end
 
 local function spawn_fish(dock, fish_name)
   local MIN_DIST = 5
-  
+
   -- Try up to 3 times to find a valid spawn location
   for i = 1, 3 do
     local angle = math.random() * 2 * math.pi
@@ -281,7 +281,7 @@ local function update_docks()
         local inventory = dock.get_inventory(defines.inventory.furnace_result)
         local is_full = inventory.is_full()
 
-        
+
 
         -- Check if we should pause (output full OR too many fish)
         local should_pause = is_full or (nearby_fish_count >= MAX_FISH)
@@ -448,7 +448,14 @@ end
 local function on_init()
   ensure_storage()
 
-  storage.fish_spawn_registry["fish"] = { "water", "deepwater", "water-green", "deepwater-green", "water-shallow" }
+  storage.fish_spawn_registry["fish"] = {
+    "water",
+    "deepwater",
+    "water-green",
+    "deepwater-green",
+    "water-shallow",
+    "deepwater-shallow",
+  }
 end
 
 script.on_init(on_init)

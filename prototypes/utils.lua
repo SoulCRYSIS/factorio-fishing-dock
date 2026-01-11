@@ -2,7 +2,6 @@ local utils = {}
 
 ---@class FishContentOptions
 ---@field name string The internal name of the fish entity (e.g. "tuna")
----@field item_factoriopedia_alternative string The name of the item that use as factoriopedia alternative
 ---@field icon string Path to the icon
 ---@field ingredients table[] Recipe ingredients
 ---@field energy number Crafting time (determines spawn rate)
@@ -34,7 +33,7 @@ function utils.create_fishing_content(options)
       name = item_name,
       icons = icons,
       localised_name = { "item-name.spawn-fish", fish_name },
-      factoriopedia_alternative = options.item_factoriopedia_alternative,
+      hidden = true,
       subgroup = "fishing",
       order = "z",
       stack_size = 50,
