@@ -21,9 +21,7 @@ function utils.create_fishing_content(options)
     {
       icon = "__fishing-dock__/graphics/icons/fishing-hook.png",
       icon_size = 64,
-      -- draw_as_background = true,
-      scale = 0.25,
-      shift = { 15, 15 },
+      draw_background = true,
     }
   }
 
@@ -32,7 +30,8 @@ function utils.create_fishing_content(options)
       type = "item",
       name = item_name,
       icons = icons,
-      subgroup = "agriculture",
+      localised_name = { "item-name.spawn-fish", fish_name },
+      subgroup = "fishing",
       order = "z",
       stack_size = 50,
       spoil_ticks = 1,
@@ -40,10 +39,11 @@ function utils.create_fishing_content(options)
     {
       type = "recipe",
       name = recipe_name,
-      category = "fish-collecting",
-      subgroup = "agriculture",
+      category = "fishing",
+      subgroup = "fishing",
       order = "f",
       icons = icons,
+      localised_name = { "recipe-name.fishing", fish_name },
       ingredients = options.ingredients,
       results = {
         { type = "item", name = item_name, amount = 1 }

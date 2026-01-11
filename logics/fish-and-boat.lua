@@ -13,7 +13,7 @@ end
 local function is_tile_valid_for_fish(tile, fish_name)
   -- Use registry for lookup
   local allowed_tiles = storage.fish_spawn_registry[fish_name]
-  
+
   for _, tile_name in pairs(allowed_tiles) do
     if tile.name == tile_name then return true end
   end
@@ -153,7 +153,7 @@ local function update_docks()
           dock.active = true
           data.paused_by_logic = nil
         end
-        
+
         local is_active = dock.is_crafting()
 
         -- Move boat
@@ -202,14 +202,14 @@ local function update_docks()
         else
           -- Leash: If too far, come back
           if dist_to_dock > RADIUS and data.state ~= "leash" then
-              -- game.print("Coming inside radius")
-              commandable.set_command({
-                type = defines.command.go_to_location,
-                destination = dock.position,
-                distraction = defines.distraction.none,
-                radius = RADIUS - 5,
-              })
-              data.state = "leash"
+            -- game.print("Coming inside radius")
+            commandable.set_command({
+              type = defines.command.go_to_location,
+              destination = dock.position,
+              distraction = defines.distraction.none,
+              radius = RADIUS - 5,
+            })
+            data.state = "leash"
             -- Wander if idle
           else
             if data.state ~= "fishing" or not is_moving or commandable.command.type ~= defines.command.go_to_location then
@@ -283,29 +283,30 @@ local function update_docks()
 
       if current_products > last_products then
         local count = current_products - last_products
-        
+
         -- Determine fish type from recipe
         local recipe = dock.get_recipe()
         local fish_name = nil
-        
+
         if recipe then
           -- Fallback to naming convention: "fishing-{fish_name}"
           if recipe.name:find("^fishing%-") then
-             fish_name = recipe.name:gsub("^fishing%-", "")
+            fish_name = recipe.name:gsub("^fishing%-", "")
           end
         end
-        
+
         -- Spawn the fish
         if fish_name then
           for i = 1, count do
-             if nearby_fish_count < MAX_FISH + count then -- Allow slight overflow or check per spawn?
-                spawn_fish(dock, fish_name)
-                nearby_fish_count = nearby_fish_count + 1 -- Update local count to prevent massive overflow if multiple crafted
-             end
+            if nearby_fish_count < MAX_FISH + count then -- Allow slight overflow or check per spawn?
+              spawn_fish(dock, fish_name)
+              nearby_fish_count = nearby_fish_count +
+                  1 -- Update local count to prevent massive overflow if multiple crafted
+            end
           end
         end
       end
-      
+
       data.last_products_finished = current_products
     end
   end
@@ -313,15 +314,78 @@ end
 
 local function on_init()
   ensure_storage()
-  
+
   storage.fish_spawn_registry["fish"] = { "water", "deepwater", "water-green", "deepwater-green", "water-shallow" }
 end
 
 script.on_init(on_init)
 script.on_configuration_changed(on_init)
 
+local function check_recipe_requirements(entity, player_index)
+  if not entity or not entity.valid or entity.name ~= DOCK_NAME then return end
+
+  local recipe = entity.get_recipe()
+  if not recipe then return end
+
+  -- Determine fish name from recipe
+  local fish_name = nil
+  if recipe.name:find("^fishing%-") then
+    fish_name = recipe.name:gsub("^fishing%-", "")
+  end
+
+  if not fish_name then return end
+
+  ensure_storage()
+  local valid_tiles = storage.fish_spawn_registry[fish_name]
+  if not valid_tiles then
+    -- Unknown fish type in registry
+    return
+  end
+
+  -- Count valid tiles nearby
+  -- We'll scan a smaller radius or the full radius?
+  -- User asked: "if it < 50 block" (assuming 50 tiles count)
+  local radius = RADIUS
+  local surface = entity.surface
+  local position = entity.position
+  local area = {
+    { position.x - radius, position.y - radius },
+    { position.x + radius, position.y + radius }
+  }
+
+  local count = 0
+  -- Optimization: Don't count ALL tiles, stop at 50
+  count = surface.count_tiles_filtered {
+    area = area,
+    name = valid_tiles,
+    limit = 100
+  }
+
+  if count < 100 then
+    -- Not enough valid water
+    entity.set_recipe(nil) -- Clear recipe
+    local player = game.get_player(player_index)
+    if player then
+      player.create_local_flying_text {
+        text = { "fishing-dock-flying-text.not-enough-habitat", fish_name },
+        position = position,
+        color = { r = 1, g = 0, b = 0 },
+      }
+    end
+  end
+end
+
 -- Events
-script.on_event(defines.events.on_built_entity, on_built, { { filter = "name", name = DOCK_NAME } })
+script.on_event(defines.events.on_gui_closed, function(event)
+  if event.entity and event.entity.name == DOCK_NAME then
+    check_recipe_requirements(event.entity, event.player_index)
+  end
+end)
+
+script.on_event(defines.events.on_entity_settings_pasted, function(event)
+  check_recipe_requirements(event.destination, event.player_index)
+end)
+
 script.on_event(defines.events.on_robot_built_entity, on_built, { { filter = "name", name = DOCK_NAME } })
 script.on_event(defines.events.script_raised_built, on_built)
 

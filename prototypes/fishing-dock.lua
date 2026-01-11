@@ -34,9 +34,9 @@ data:extend({
     },
     results = { { type = "item", name = "fishing-dock", amount = 1 } }
   },
-  ---@type data.FurnacePrototype
+  ---@type data.AssemblingMachinePrototype
   {
-    type = "furnace",
+    type = "assembling-machine",
     name = "fishing-dock",
     icon = "__fishing-dock__/graphics/icons/fishing-dock.png",
     flags = { "placeable-neutral", "placeable-player", "player-creation" },
@@ -44,8 +44,8 @@ data:extend({
     max_health = 200,
     collision_box = { { -1.8, -1.9 }, { 1.8, 1.8 } },
     selection_box = { { -2, -2 }, { 2, 2 } },
-    result_inventory_size = 1,
-    source_inventory_size = 1,
+    ingredient_count = 2,
+    max_item_product_count = 1,
     crafting_speed = 1,
     -- Allow placement on water/deepwater by NOT colliding with tile layers like `item`.
     -- Keep object-ish layers so the dock still blocks overlaps with other entities.
@@ -54,9 +54,7 @@ data:extend({
     energy_source = {
       type = "void",
     },
-    crafting_categories = { "fish-collecting" },
-    tile_height = 3,
-    tile_width = 3,
+    crafting_categories = { "fishing" },
     tile_buildability_rules =
     {
       { area = { { -1.9, 1.1 }, { 1.9, 1.9 } },  required_tiles = { layers = { ground_tile = true } }, colliding_tiles = { layers = { water_tile = true } }, remove_on_collision = true },
