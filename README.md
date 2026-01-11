@@ -19,7 +19,7 @@ Don't worry too much about not getting 100% spawn rate, the algorithm will try t
 If you want to add your type of fish, it super easy
 
 1. Add your fish item and entity like normal
-2. Use util (or just copy the code if you want more adjustment)
+2. Use util (or just copy the inside code if you want more adjustment)
   ```
   local fishing_utils = require("__fishing-dock__.prototypes.utils")
 
