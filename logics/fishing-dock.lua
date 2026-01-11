@@ -3,7 +3,7 @@ local util = require("util")
 local DOCK_NAME = "fishing-dock"
 local BOAT_NAME = "fishing-boat"
 local FISH_NAME = "raw-fish"
-local RADIUS = 16
+local RADIUS = 24
 local MAX_FISH = 10
 
 local function is_water(tile)
@@ -137,71 +137,93 @@ local function update_docks()
 
         if is_full or not is_active then
           -- Go back to dock and idle if full or inactive
-          if dist_to_dock > 4 then     -- Stay close to dock
-            game.print("Going back to dock")
-            commandable.set_command({
-              type = defines.command.go_to_location,
-              destination = dock.position,
-              distraction = defines.distraction.none,
-              radius = 4
-            })
+          if dist_to_dock > 4 then -- Stay close to dock
+            if data.state ~= "returning_to_dock" then
+              game.print("Going back to dock")
+              commandable.set_command({
+                type = defines.command.go_to_location,
+                destination = dock.position,
+                distraction = defines.distraction.none,
+                radius = 4,
+                no_break = true,
+              })
+              data.state = "returning_to_dock"
+            end
           else
-            game.print("Stopping")
-            commandable.set_command({
-              type = defines.command.stop,
-              distraction = defines.distraction.none
-            })
+            if data.state ~= "stopped" then
+              game.print("Stopping")
+              commandable.set_command({
+                type = defines.command.stop,
+                distraction = defines.distraction.none
+              })
+              data.state = "stopped"
+            end
           end
         else
           -- Leash: If too far, come back
           if dist_to_dock > RADIUS then
-            game.print("Coming inside radius")
-            commandable.set_command({
-              type = defines.command.go_to_location,
-              destination = dock.position,
-              distraction = defines.distraction.none,
-              radius = RADIUS / 2
-            })
-            -- Wander if idle
-          elseif commandable.moving_state ~= defines.moving_state.moving then
-            game.print("Finding nearest fish")
-            -- Move to nearest fish
-            local nearest_fish = nil
-            local min_dist = math.huge
-
-            local fish_list = dock.surface.find_entities_filtered {
-              name = "fish",
-              position = dock.position,
-              radius = RADIUS
-            }
-
-            -- for _, fish in pairs(fish_list) do
-            --   if fish.valid then
-            --     local dist = util.distance(boat.position, fish.position)
-            --     if dist < min_dist then
-            --       min_dist = dist
-            --       nearest_fish = fish
-            --     end
-            --   end
-            -- end
-
-            if fish_list[1] then
-              game.print("Moving to nearest fish")
+            if data.state ~= "leash" then
+              game.print("Coming inside radius")
               commandable.set_command({
                 type = defines.command.go_to_location,
-                destination_entity = fish_list[1],
-                distraction = defines.distraction.none,
-                radius = 2,
-                pathfind_flags = { prefer_straight_paths = true }
+                destination = dock.position,
+                distractn = defines.distraction.none,
+                radius = RADIUS - 5,
+                no_break = true,
               })
-            else
+              data.state = "leash"
+            end
+            -- Wander if idle
+          else
+            if data.state ~= "fishing" then
+              game.print("Finding nearest fish")
+              -- Move to nearest fish
+              local nearest_fish = nil
+              local min_dist = math.huge
+
+              local fish_list = dock.surface.find_entities_filtered {
+                name = "fish",
+                position = dock.position,
+                radius = RADIUS
+              }
+
+              for _, fish in pairs(fish_list) do
+                if fish.valid then
+                  local dist = util.distance(boat.position, fish.position)
+                  if dist < min_dist then
+                    min_dist = dist
+                    nearest_fish = fish
+                  end
+                end
+              end
+
+              if nearest_fish then
+                game.print("Moving to nearest fish")
+                commandable.set_command({
+                  type = defines.command.go_to_location,
+                  destination_entity = nearest_fish,
+                  distraction = defines.distraction.none,
+                  radius = 2,
+                  no_break = true,
+                })
+                data.state = "fishing"
+                data.target_fish = nearest_fish
+              end
+            elseif data.state == "fishing" then
+              -- Check if target fish is still valid
+              if not data.target_fish or not data.target_fish.valid then
+                game.print("Target fish is no longer valid, resetting state")
+                data.state = "idle"
+              end
+            elseif dist_moved < 0.01 then
               game.print("Wandering")
               commandable.set_command({
                 type = defines.command.wander,
-                radius = RADIUS,         -- Wander in short bursts
+                radius = RADIUS, -- Wander in short bursts
                 distraction = defines.distraction.none,
                 wander_in_group = false
               })
+              data.state = "wandering"
             end
           end
         end

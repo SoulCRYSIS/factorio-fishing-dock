@@ -198,7 +198,7 @@ data:extend({
         width = 256,
         height = 256,
       },
-      distance = 16,
+      distance = 24,
     }
   },
   ---@type data.UnitPrototype
@@ -270,25 +270,22 @@ data:extend({
           filename = "__core__/graphics/light-cone.png",
           priority = "extra-high",
           flags = { "light" },
-          scale = 2,
+          scale = 1,
           width = 200,
           height = 200
         },
-        shift = { 0, -1 },
-        size = 0.5,
-        intensity = 0.6,
-        color = { 0.92, 0.77, 0.3 }
+        shift = { 0, -4 },
+        size = 1,
+        intensity = 0.7,
+        color = { 0.8, 0.7, 0.5 }
       },
     },
     vision_distance = 0,
-    movement_speed = 0.05,
+    movement_speed = 0.1,
     distance_per_frame = 0.1,
     -- pollution_to_join_attack = 0,
     distraction_cooldown = 0,
     dying_explosion = "explosion",
-    ai_settings = {
-      do_separation = false
-    },
     run_animation = {
       layers = {
         {
