@@ -64,9 +64,67 @@ local function spawn_fish(dock, fish_name)
   end
 end
 
+local function check_recipe_requirements(entity, player_index)
+  if not entity or not entity.valid or entity.name ~= DOCK_NAME then return end
+
+  local recipe = entity.get_recipe()
+  if not recipe then return end
+
+  -- Determine fish name from recipe
+  local fish_name = nil
+  if recipe.name:find("^fishing%-") then
+    fish_name = recipe.name:gsub("^fishing%-", "")
+  end
+
+  if not fish_name then return end
+
+  ensure_storage()
+  local valid_tiles = storage.fish_spawn_registry[fish_name]
+  if not valid_tiles then
+    -- Unknown fish type in registry
+    return
+  end
+
+  -- Count valid tiles nearby
+  -- We'll scan a smaller radius or the full radius?
+  -- User asked: "if it < 50 block" (assuming 50 tiles count)
+  local radius = RADIUS
+  local surface = entity.surface
+  local position = entity.position
+  local area = {
+    { position.x - radius, position.y - radius },
+    { position.x + radius, position.y + radius }
+  }
+
+  local count = 0
+  -- Optimization: Don't count ALL tiles, stop at 50
+  count = surface.count_tiles_filtered {
+    area = area,
+    name = valid_tiles,
+    limit = 100
+  }
+
+  if count < 100 then
+    -- Not enough valid water
+    entity.set_recipe(nil) -- Clear recipe
+    if player_index then
+      local player = game.get_player(player_index)
+      if player then
+        player.create_local_flying_text {
+          text = { "fishing-dock-flying-text.not-enough-habitat", fish_name },
+          position = position,
+          color = { r = 1, g = 0, b = 0 },
+        }
+      end
+    end
+  end
+end
+
 local function on_built(event)
   local entity = event.created_entity or event.entity
   if not entity or not entity.valid or entity.name ~= DOCK_NAME then return end
+
+  check_recipe_requirements(entity, event.player_index)
 
   local surface = entity.surface
 
@@ -321,60 +379,7 @@ end
 script.on_init(on_init)
 script.on_configuration_changed(on_init)
 
-local function check_recipe_requirements(entity, player_index)
-  if not entity or not entity.valid or entity.name ~= DOCK_NAME then return end
-
-  local recipe = entity.get_recipe()
-  if not recipe then return end
-
-  -- Determine fish name from recipe
-  local fish_name = nil
-  if recipe.name:find("^fishing%-") then
-    fish_name = recipe.name:gsub("^fishing%-", "")
-  end
-
-  if not fish_name then return end
-
-  ensure_storage()
-  local valid_tiles = storage.fish_spawn_registry[fish_name]
-  if not valid_tiles then
-    -- Unknown fish type in registry
-    return
-  end
-
-  -- Count valid tiles nearby
-  -- We'll scan a smaller radius or the full radius?
-  -- User asked: "if it < 50 block" (assuming 50 tiles count)
-  local radius = RADIUS
-  local surface = entity.surface
-  local position = entity.position
-  local area = {
-    { position.x - radius, position.y - radius },
-    { position.x + radius, position.y + radius }
-  }
-
-  local count = 0
-  -- Optimization: Don't count ALL tiles, stop at 50
-  count = surface.count_tiles_filtered {
-    area = area,
-    name = valid_tiles,
-    limit = 100
-  }
-
-  if count < 100 then
-    -- Not enough valid water
-    entity.set_recipe(nil) -- Clear recipe
-    local player = game.get_player(player_index)
-    if player then
-      player.create_local_flying_text {
-        text = { "fishing-dock-flying-text.not-enough-habitat", fish_name },
-        position = position,
-        color = { r = 1, g = 0, b = 0 },
-      }
-    end
-  end
-end
-
+local filter = { { filter = "name", name = DOCK_NAME } }
 -- Events
 script.on_event(defines.events.on_gui_closed, function(event)
   if event.entity and event.entity.name == DOCK_NAME then
@@ -386,12 +391,13 @@ script.on_event(defines.events.on_entity_settings_pasted, function(event)
   check_recipe_requirements(event.destination, event.player_index)
 end)
 
-script.on_event(defines.events.on_robot_built_entity, on_built, { { filter = "name", name = DOCK_NAME } })
-script.on_event(defines.events.script_raised_built, on_built)
+script.on_event(defines.events.on_robot_built_entity, on_built, filter)
+script.on_event(defines.events.script_raised_built, on_built, filter)
+script.on_event(defines.events.on_built_entity, on_built, filter)
 
-script.on_event(defines.events.on_player_mined_entity, on_destroy, { { filter = "name", name = DOCK_NAME } })
-script.on_event(defines.events.on_robot_mined_entity, on_destroy, { { filter = "name", name = DOCK_NAME } })
-script.on_event(defines.events.on_entity_died, on_destroy, { { filter = "name", name = DOCK_NAME } })
+script.on_event(defines.events.on_player_mined_entity, on_destroy, filter)
+script.on_event(defines.events.on_robot_mined_entity, on_destroy, filter)
+script.on_event(defines.events.on_entity_died, on_destroy, filter)
 script.on_event(defines.events.script_raised_destroy, on_destroy)
 
 script.on_nth_tick(60, update_docks)
