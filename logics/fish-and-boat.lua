@@ -3,7 +3,7 @@ local util = require("util")
 local DOCK_NAME = "fishing-dock"
 local BOAT_NAME = "fishing-boat"
 local RADIUS = 24
-local MAX_FISH = 10
+local MAX_FISH = 15
 
 local function ensure_storage()
   if not storage.fishing_docks then storage.fishing_docks = {} end
@@ -51,16 +51,21 @@ end
 
 local function spawn_fish(dock, fish_name)
   local MIN_DIST = 5
-  local angle = math.random() * 2 * math.pi
-  local dist = MIN_DIST + math.random() * (RADIUS - MIN_DIST)
-  local dx = math.cos(angle) * dist
-  local dy = math.sin(angle) * dist
-  local target_pos = { x = dock.position.x + dx, y = dock.position.y + dy }
+  
+  -- Try up to 3 times to find a valid spawn location
+  for i = 1, 3 do
+    local angle = math.random() * 2 * math.pi
+    local dist = MIN_DIST + math.random() * (RADIUS - MIN_DIST)
+    local dx = math.cos(angle) * dist
+    local dy = math.sin(angle) * dist
+    local target_pos = { x = dock.position.x + dx, y = dock.position.y + dy }
 
-  local tile = dock.surface.get_tile(target_pos)
-  if is_tile_valid_for_fish(tile, fish_name) then
-    dock.surface.create_entity { name = fish_name, position = target_pos }
-    dock.surface.create_entity { name = "water-splash", position = target_pos }
+    local tile = dock.surface.get_tile(target_pos)
+    if is_tile_valid_for_fish(tile, fish_name) then
+      dock.surface.create_entity { name = fish_name, position = target_pos }
+      dock.surface.create_entity { name = "water-splash", position = target_pos }
+      break
+    end
   end
 end
 
@@ -122,11 +127,76 @@ end
 
 local function on_built(event)
   local entity = event.created_entity or event.entity
-  if not entity or not entity.valid or entity.name ~= DOCK_NAME then return end
+  if not entity or not entity.valid then return end
+
+  local is_ghost = entity.name == "entity-ghost"
+  if entity.name ~= DOCK_NAME and (not is_ghost or entity.ghost_name ~= DOCK_NAME) then return end
+
+  -- Check for nearby docks (exclusion zone)
+  local surface = entity.surface
+  local position = entity.position
+
+  local nearby_docks = surface.find_entities_filtered {
+    name = DOCK_NAME,
+    position = position,
+    radius = RADIUS
+  }
+
+  local nearby_ghosts = surface.find_entities_filtered {
+    ghost_name = DOCK_NAME,
+    position = position,
+    radius = RADIUS,
+  }
+
+  local too_close = false
+  for _, dock in pairs(nearby_docks) do
+    if dock.valid and dock.unit_number ~= entity.unit_number then
+      too_close = true
+      break
+    end
+  end
+
+  if not too_close then
+    for _, dock in pairs(nearby_ghosts) do
+      if dock.valid and dock.unit_number ~= entity.unit_number then
+        too_close = true
+        break
+      end
+    end
+  end
+
+  if too_close then
+    -- Found another dock too close
+    if event.player_index then
+      local player = game.get_player(event.player_index)
+      if player then
+        player.create_local_flying_text {
+          text = { "fishing-dock-flying-text.too-close" },
+          position = position,
+          color = { r = 1, g = 0, b = 0 },
+        }
+        if not is_ghost then
+          -- Try to return item to cursor or inventory
+          if player.cursor_stack.valid_for_read and player.cursor_stack.name == "fishing-dock" then
+            player.cursor_stack.count = player.cursor_stack.count + 1
+          else
+            player.insert({ name = "fishing-dock", count = 1 })
+          end
+        end
+      elseif not is_ghost then
+        surface.spill_item_stack { position = position, stack = { name = "fishing-dock", count = 1 }, enable_looted = true, force = entity.force, allow_belts = false }
+      end
+    elseif not is_ghost then
+      surface.spill_item_stack { position = position, stack = { name = "fishing-dock", count = 1 }, enable_looted = true, force = entity.force, allow_belts = false }
+    end
+
+    entity.destroy()
+    return
+  end
+
+  if is_ghost then return end
 
   check_recipe_requirements(entity, event.player_index)
-
-  local surface = entity.surface
 
   ensure_storage()
 
@@ -159,6 +229,19 @@ local function on_destroy(event)
     end
     storage.fishing_docks[entity.unit_number] = nil
   end
+end
+
+local function get_fish_name(recipe)
+  local fish_name = nil
+
+  if recipe then
+    -- Fallback to naming convention: "fishing-{fish_name}"
+    if recipe.name:find("^fishing%-") then
+      fish_name = recipe.name:gsub("^fishing%-", "")
+    end
+  end
+
+  return fish_name
 end
 
 local function update_docks()
@@ -198,6 +281,8 @@ local function update_docks()
         local inventory = dock.get_inventory(defines.inventory.furnace_result)
         local is_full = inventory.is_full()
 
+        
+
         -- Check if we should pause (output full OR too many fish)
         local should_pause = is_full or (nearby_fish_count >= MAX_FISH)
 
@@ -222,8 +307,8 @@ local function update_docks()
         local dist_moved = util.distance(boat.position, last_pos)
         local is_moving = dist_moved > 0.01
 
-        if is_moving then
-          dock.surface.create_trivial_smoke { name = "ironclad-ripple", position = boat.position }
+        if dist_moved > 1 then
+          dock.surface.create_trivial_smoke { name = "fishing-boat-ripple", position = boat.position }
         end
         data.last_pos = boat.position
 
@@ -233,8 +318,8 @@ local function update_docks()
 
         -- game.print(commandable.command.type)
 
-        if is_full or not is_active then
-          -- Go back to dock and idle if full or inactive
+        if is_full or (not is_active and not data.paused_by_logic) then
+          -- Go back to dock and idle if full or inactive (and not paused by our logic)
           if dist_to_dock > 4 then -- Stay close to dock
             if data.state ~= "returning_to_dock" then
               -- game.print("Going back to dock")
@@ -316,10 +401,10 @@ local function update_docks()
           end
         end
 
-        -- Collect fish (only if not full and active)
-        if not is_full and is_active then
+        -- Collect fish (only if not full and active/paused by logic)
+        if not is_full and (is_active or data.paused_by_logic) then
           local fish = dock.surface.find_entities_filtered {
-            name = "fish",
+            name = get_fish_name(dock.get_recipe()),
             position = boat.position,
             radius = 3
           }
@@ -341,17 +426,7 @@ local function update_docks()
 
       if current_products > last_products then
         local count = current_products - last_products
-
-        -- Determine fish type from recipe
-        local recipe = dock.get_recipe()
-        local fish_name = nil
-
-        if recipe then
-          -- Fallback to naming convention: "fishing-{fish_name}"
-          if recipe.name:find("^fishing%-") then
-            fish_name = recipe.name:gsub("^fishing%-", "")
-          end
-        end
+        local fish_name = get_fish_name(dock.get_recipe())
 
         -- Spawn the fish
         if fish_name then
@@ -379,7 +454,7 @@ end
 script.on_init(on_init)
 script.on_configuration_changed(on_init)
 
-local filter = { { filter = "name", name = DOCK_NAME } }
+local filter = { { filter = "name", name = DOCK_NAME }, { filter = "ghost_name", name = DOCK_NAME } }
 -- Events
 script.on_event(defines.events.on_gui_closed, function(event)
   if event.entity and event.entity.name == DOCK_NAME then

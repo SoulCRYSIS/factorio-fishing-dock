@@ -57,8 +57,8 @@ data:extend({
     crafting_categories = { "fishing" },
     tile_buildability_rules =
     {
-      { area = { { -1.9, 1.1 }, { 1.9, 1.9 } },  required_tiles = { layers = { ground_tile = true } }, colliding_tiles = { layers = { water_tile = true } }, remove_on_collision = true },
-      { area = { { -1.9, -4.9 }, { 1.9, 0.9 } }, required_tiles = { layers = { water_tile = true } },  remove_on_collision = true },
+      { area = { { -1.9, 1.1 }, { 1.9, 1.9 } },  required_tiles = { layers = { ground_tile = true } },        colliding_tiles = { layers = { water_tile = true } }, remove_on_collision = true },
+      { area = { { -1.9, -4.9 }, { 1.9, 0.9 } }, required_tiles = { layers = { water_tile = true } },         remove_on_collision = true },
     },
     graphics_set = {
       water_reflection = {

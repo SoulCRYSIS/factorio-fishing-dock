@@ -2,6 +2,32 @@ local boat_width = 320
 local boat_height = 320
 
 data:extend({
+  ---@type data.TrivialSmokePrototype
+  {
+    type = "trivial-smoke",
+    name = "fishing-boat-ripple",
+    duration = 200,
+    fade_in_duration = 10,
+    fade_away_duration = 190,
+    spread_duration = 300,
+    start_scale = 0.1,
+    end_scale = 0.4,
+    color = { r = 1, g = 1, b = 1, a = 1 },
+    cyclic = true,
+    affected_by_wind = false,
+    render_layer = "above-tiles",   --"water-tile",
+    movement_slow_down_factor = 0,
+    show_when_smoke_off = true,
+    animation =
+    {
+      filename = "__fishing-dock__/graphics/entities/water-ripple.png",
+      width = 512,
+      height = 512,
+      line_length = 1,
+      frame_count = 1,
+      priority = "high",
+    }
+  },
   ---@type data.UnitPrototype
   {
     type = "unit",

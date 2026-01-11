@@ -8,6 +8,6 @@ data:extend({
     type = "item-subgroup",
     name = "fishing",
     group = "intermediate-products",
-    order = "nz",
+    order = "oz",
   }
 })
