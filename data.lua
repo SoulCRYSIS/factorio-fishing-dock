@@ -1,3 +1,5 @@
 require("prototypes.fishing-dock")
+require("prototypes.fishing-boat")
 require("prototypes.fishing-recipes")
 require("prototypes.groups")
+require("prototypes.utils")

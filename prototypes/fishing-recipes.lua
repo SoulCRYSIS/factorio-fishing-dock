@@ -1,27 +1,14 @@
-data:extend({
-  {
-    type = "recipe",
-    name = "fishing-with-eggs",
-    category = "fish-collecting",
-    order = "a",
-    icon = "__base__/graphics/icons/fish.png",
-    ingredients = {
-      { type = "item", name = "biter-egg", amount = 1 }
-    },
-    results = {
-      { type = "item", name = "collected-fish", amount = 1 }
-    },
-    energy_required = 10, 
-    enabled = true,
+local fishing_utils = require("prototypes.utils")
+
+-- Base Game Fish
+fishing_utils.create_fishing_content({
+  name = "fish",
+  icon = "__base__/graphics/icons/fish.png",
+  energy = 10,
+  ingredients = {
+    {type = "item", name = "biter-egg", amount = 1}
   },
-  {
-    type = "item",
-    name = "collected-fish",
-    icon = "__base__/graphics/icons/fish.png",
-    subgroup = "agriculture",
-    order = "ca",
-    stack_size = 20,
-    spoil_ticks = 1,
-    spoil_result = nil
-  }
 })
+
+-- NOTE: For "fish", we must ensure it's in the registry (handled in logics/fish-and-boat.lua)
+-- The utils created "fishing-fish" recipe which will map to "fish" entity automatically.

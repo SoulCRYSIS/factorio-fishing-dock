@@ -2,17 +2,31 @@ local util = require("util")
 
 local DOCK_NAME = "fishing-dock"
 local BOAT_NAME = "fishing-boat"
-local FISH_NAME = "raw-fish"
 local RADIUS = 24
 local MAX_FISH = 10
 
-local function is_water(tile)
-  return tile.collides_with("water_tile")
-end
-
 local function ensure_storage()
   if not storage.fishing_docks then storage.fishing_docks = {} end
+  if not storage.fish_spawn_registry then storage.fish_spawn_registry = {} end
 end
+
+local function is_tile_valid_for_fish(tile, fish_name)
+  -- Use registry for lookup
+  local allowed_tiles = storage.fish_spawn_registry[fish_name]
+  
+  for _, tile_name in pairs(allowed_tiles) do
+    if tile.name == tile_name then return true end
+  end
+  return false
+end
+
+-- Remote Interface
+remote.add_interface("fishing_dock", {
+  register_fish = function(fish_name, spawn_tiles)
+    if not storage.fish_spawn_registry then ensure_storage() end
+    storage.fish_spawn_registry[fish_name] = spawn_tiles
+  end
+})
 
 local function get_spawn_pos(dock)
   local direction = dock.direction
@@ -33,6 +47,21 @@ local function get_spawn_pos(dock)
   end
 
   return { x = position.x + offset.x, y = position.y + offset.y }
+end
+
+local function spawn_fish(dock, fish_name)
+  local MIN_DIST = 5
+  local angle = math.random() * 2 * math.pi
+  local dist = MIN_DIST + math.random() * (RADIUS - MIN_DIST)
+  local dx = math.cos(angle) * dist
+  local dy = math.sin(angle) * dist
+  local target_pos = { x = dock.position.x + dx, y = dock.position.y + dy }
+
+  local tile = dock.surface.get_tile(target_pos)
+  if is_tile_valid_for_fish(tile, fish_name) then
+    dock.surface.create_entity { name = fish_name, position = target_pos }
+    dock.surface.create_entity { name = "water-splash", position = target_pos }
+  end
 end
 
 local function on_built(event)
@@ -98,23 +127,33 @@ local function update_docks()
         data.boat = boat
       end
 
+      -- Check fish population for pausing logic
+      local nearby_fish_count = dock.surface.count_entities_filtered {
+        type = "fish",
+        position = dock.position,
+        radius = RADIUS
+      }
+
       -- Boat Logic
       if boat and boat.valid then
         -- Check if dock is full or inactive
         local inventory = dock.get_inventory(defines.inventory.furnace_result)
         local is_full = inventory.is_full()
 
-        -- Toggle active state to prevent consuming fuel when full
-        if is_full then
+        -- Check if we should pause (output full OR too many fish)
+        local should_pause = is_full or (nearby_fish_count >= MAX_FISH)
+
+        -- Toggle active state to prevent consuming fuel when full or overpopulated
+        if should_pause then
           if dock.active then
             dock.active = false
-            data.paused_by_full = true
+            data.paused_by_logic = true
           end
-        elseif data.paused_by_full then
+        elseif data.paused_by_logic then
           dock.active = true
-          data.paused_by_full = nil
+          data.paused_by_logic = nil
         end
-
+        
         local is_active = dock.is_crafting()
 
         -- Move boat
@@ -123,11 +162,10 @@ local function update_docks()
         -- Since we can't rely on accurate speed/moving state, we use distance moved.
         local last_pos = data.last_pos or boat.position
         local dist_moved = util.distance(boat.position, last_pos)
+        local is_moving = dist_moved > 0.01
 
-        if dist_moved > 0.01 then
-          if game.tick % 10 == 0 then
-            dock.surface.create_trivial_smoke { name = "ironclad-ripple", position = boat.position }
-          end
+        if is_moving then
+          dock.surface.create_trivial_smoke { name = "ironclad-ripple", position = boat.position }
         end
         data.last_pos = boat.position
 
@@ -135,11 +173,13 @@ local function update_docks()
         local dist_to_dock = util.distance(boat.position, dock.position)
         local commandable = boat.commandable
 
+        -- game.print(commandable.command.type)
+
         if is_full or not is_active then
           -- Go back to dock and idle if full or inactive
           if dist_to_dock > 4 then -- Stay close to dock
             if data.state ~= "returning_to_dock" then
-              game.print("Going back to dock")
+              -- game.print("Going back to dock")
               commandable.set_command({
                 type = defines.command.go_to_location,
                 destination = dock.position,
@@ -151,7 +191,7 @@ local function update_docks()
             end
           else
             if data.state ~= "stopped" then
-              game.print("Stopping")
+              -- game.print("Stopping")
               commandable.set_command({
                 type = defines.command.stop,
                 distraction = defines.distraction.none
@@ -161,22 +201,19 @@ local function update_docks()
           end
         else
           -- Leash: If too far, come back
-          if dist_to_dock > RADIUS then
-            if data.state ~= "leash" then
-              game.print("Coming inside radius")
+          if dist_to_dock > RADIUS and data.state ~= "leash" then
+              -- game.print("Coming inside radius")
               commandable.set_command({
                 type = defines.command.go_to_location,
                 destination = dock.position,
-                distractn = defines.distraction.none,
+                distraction = defines.distraction.none,
                 radius = RADIUS - 5,
-                no_break = true,
               })
               data.state = "leash"
-            end
             -- Wander if idle
           else
-            if data.state ~= "fishing" then
-              game.print("Finding nearest fish")
+            if data.state ~= "fishing" or not is_moving or commandable.command.type ~= defines.command.go_to_location then
+              -- game.print("Finding nearest fish")
               -- Move to nearest fish
               local nearest_fish = nil
               local min_dist = math.huge
@@ -198,32 +235,25 @@ local function update_docks()
               end
 
               if nearest_fish then
-                game.print("Moving to nearest fish")
+                -- game.print("Moving to nearest fish: " .. nearest_fish.position.x .. ", " .. nearest_fish.position.y)
                 commandable.set_command({
                   type = defines.command.go_to_location,
-                  destination_entity = nearest_fish,
+                  destination = nearest_fish.position,
                   distraction = defines.distraction.none,
-                  radius = 2,
+                  radius = 1,
                   no_break = true,
                 })
                 data.state = "fishing"
-                data.target_fish = nearest_fish
+              else
+                -- game.print("Wandering")
+                commandable.set_command({
+                  type = defines.command.wander,
+                  radius = RADIUS / 2, -- Wander in short bursts
+                  distraction = defines.distraction.none,
+                  wander_in_group = false
+                })
+                data.state = "wandering"
               end
-            elseif data.state == "fishing" then
-              -- Check if target fish is still valid
-              if not data.target_fish or not data.target_fish.valid then
-                game.print("Target fish is no longer valid, resetting state")
-                data.state = "idle"
-              end
-            elseif dist_moved < 0.01 then
-              game.print("Wandering")
-              commandable.set_command({
-                type = defines.command.wander,
-                radius = RADIUS, -- Wander in short bursts
-                distraction = defines.distraction.none,
-                wander_in_group = false
-              })
-              data.state = "wandering"
             end
           end
         end
@@ -246,33 +276,49 @@ local function update_docks()
         end
       end
 
-      -- Spawn fish logic (only if active)
-      local is_active = dock.is_crafting()
-      if is_active and math.random() < 0.2 then -- 20% chance per second
-        local nearby_fish = dock.surface.count_entities_filtered {
-          type = "fish",
-          position = dock.position,
-          radius = RADIUS
-        }
-        if nearby_fish < MAX_FISH then
-          local MIN_DIST = 5
-          -- Spawn new fish
-          local angle = math.random() * 2 * math.pi
-          local dist = MIN_DIST + math.random() * (RADIUS - MIN_DIST)
-          local dx = math.cos(angle) * dist
-          local dy = math.sin(angle) * dist
-          local target_pos = { x = dock.position.x + dx, y = dock.position.y + dy }
+      -- Spawn fish logic (based on products_finished)
+      -- This allows rate control via recipe time
+      local current_products = dock.products_finished
+      local last_products = data.last_products_finished or current_products
 
-          local tile = dock.surface.get_tile(target_pos)
-          if is_water(tile) then
-            dock.surface.create_entity { name = "fish", position = target_pos }
-            dock.surface.create_entity { name = "water-splash", position = target_pos }
+      if current_products > last_products then
+        local count = current_products - last_products
+        
+        -- Determine fish type from recipe
+        local recipe = dock.get_recipe()
+        local fish_name = nil
+        
+        if recipe then
+          -- Fallback to naming convention: "fishing-{fish_name}"
+          if recipe.name:find("^fishing%-") then
+             fish_name = recipe.name:gsub("^fishing%-", "")
+          end
+        end
+        
+        -- Spawn the fish
+        if fish_name then
+          for i = 1, count do
+             if nearby_fish_count < MAX_FISH + count then -- Allow slight overflow or check per spawn?
+                spawn_fish(dock, fish_name)
+                nearby_fish_count = nearby_fish_count + 1 -- Update local count to prevent massive overflow if multiple crafted
+             end
           end
         end
       end
+      
+      data.last_products_finished = current_products
     end
   end
 end
+
+local function on_init()
+  ensure_storage()
+  
+  storage.fish_spawn_registry["fish"] = { "water", "deepwater", "water-green", "deepwater-green", "water-shallow" }
+end
+
+script.on_init(on_init)
+script.on_configuration_changed(on_init)
 
 -- Events
 script.on_event(defines.events.on_built_entity, on_built, { { filter = "name", name = DOCK_NAME } })
