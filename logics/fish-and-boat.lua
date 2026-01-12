@@ -7,13 +7,12 @@ local MAX_FISH = 15
 
 local function ensure_storage()
   if not storage.fishing_docks then storage.fishing_docks = {} end
-  if not storage.fish_spawn_registry then storage.fish_spawn_registry = {} end
+  if not storage.fish_spawn_tiles then storage.fish_spawn_tiles = {} end
+  if not storage.fishing_recipe_mapping then storage.fishing_recipe_mapping = {} end
 end
 
-local function is_tile_valid_for_fish(tile, fish_name)
-  -- Use registry for lookup
-  local allowed_tiles = storage.fish_spawn_registry[fish_name]
-
+local function is_tile_valid_for_fish(tile, allowed_tiles)
+  if not allowed_tiles then return false end
   for _, tile_name in pairs(allowed_tiles) do
     if tile.name == tile_name then return true end
   end
@@ -22,9 +21,10 @@ end
 
 -- Remote Interface
 remote.add_interface("fishing_dock", {
-  register_fish = function(fish_name, spawn_tiles)
-    if not storage.fish_spawn_registry then ensure_storage() end
-    storage.fish_spawn_registry[fish_name] = spawn_tiles
+  register_fish = function(recipe_name, fish_entity_name, spawn_tiles)
+    ensure_storage()
+    storage.fish_spawn_tiles[recipe_name] = spawn_tiles
+    storage.fishing_recipe_mapping[recipe_name] = fish_entity_name
   end
 })
 
@@ -49,7 +49,7 @@ local function get_spawn_pos(dock)
   return { x = position.x + offset.x, y = position.y + offset.y }
 end
 
-local function spawn_fish(dock, fish_name)
+local function spawn_fish(dock, fish_entity_name, allowed_tiles)
   local MIN_DIST = 5
 
   -- Try up to 3 times to find a valid spawn location
@@ -61,8 +61,8 @@ local function spawn_fish(dock, fish_name)
     local target_pos = { x = dock.position.x + dx, y = dock.position.y + dy }
 
     local tile = dock.surface.get_tile(target_pos)
-    if is_tile_valid_for_fish(tile, fish_name) then
-      dock.surface.create_entity { name = fish_name, position = target_pos }
+    if is_tile_valid_for_fish(tile, allowed_tiles) then
+      dock.surface.create_entity { name = fish_entity_name, position = target_pos }
       dock.surface.create_entity { name = "water-splash", position = target_pos }
       break
     end
@@ -76,15 +76,10 @@ local function check_recipe_requirements(entity, player_index)
   if not recipe then return end
 
   -- Determine fish name from recipe
-  local fish_name = nil
-  if recipe.name:find("^fishing%-") then
-    fish_name = recipe.name:gsub("^fishing%-", "")
-  end
-
+  local fish_name = storage.fishing_recipe_mapping[recipe.name]
   if not fish_name then return end
 
-  ensure_storage()
-  local valid_tiles = storage.fish_spawn_registry[fish_name]
+  local valid_tiles = storage.fish_spawn_tiles[recipe.name]
   if not valid_tiles then
     -- Unknown fish type in registry
     return
@@ -231,22 +226,7 @@ local function on_destroy(event)
   end
 end
 
-local function get_fish_name(recipe)
-  local fish_name = nil
-
-  if recipe then
-    -- Fallback to naming convention: "fishing-{fish_name}"
-    if recipe.name:find("^fishing%-") then
-      fish_name = recipe.name:gsub("^fishing%-", "")
-    end
-  end
-
-  return fish_name
-end
-
 local function update_docks()
-  ensure_storage()
-
   for unit_number, data in pairs(storage.fishing_docks) do
     local dock = data.dock
     local boat = data.boat
@@ -404,7 +384,7 @@ local function update_docks()
         -- Collect fish (only if not full and active/paused by logic)
         if not is_full and (is_active or data.paused_by_logic) then
           local fish = dock.surface.find_entities_filtered {
-            name = get_fish_name(dock.get_recipe()),
+            name = storage.fishing_recipe_mapping[dock.get_recipe().name],
             position = boat.position,
             radius = 3
           }
@@ -426,13 +406,15 @@ local function update_docks()
 
       if current_products > last_products then
         local count = current_products - last_products
-        local fish_name = get_fish_name(dock.get_recipe())
+        local recipe_name = dock.get_recipe().name
+        local fish_entity_name = storage.fishing_recipe_mapping[recipe_name]
+        local allowed_tiles = storage.fish_spawn_tiles[recipe_name]
 
         -- Spawn the fish
-        if fish_name then
+        if fish_entity_name and allowed_tiles then
           for i = 1, count do
             if nearby_fish_count < MAX_FISH + count then -- Allow slight overflow or check per spawn?
-              spawn_fish(dock, fish_name)
+              spawn_fish(dock, fish_entity_name, allowed_tiles)
               nearby_fish_count = nearby_fish_count +
                   1 -- Update local count to prevent massive overflow if multiple crafted
             end
@@ -448,21 +430,30 @@ end
 local function on_init()
   ensure_storage()
 
-  storage.fish_spawn_registry["fish"] = {
+  storage.fish_spawn_tiles["fishing-fish"] = {
     "water",
     "deepwater",
     "water-green",
     "deepwater-green",
     "water-shallow",
-    "deepwater-shallow",
   }
+  storage.fishing_recipe_mapping["fishing-fish"] = "fish"
+
+  if script.active_mods["pelagos"] then
+    remote.call(
+      "fishing_dock",
+      "register_fish",
+      "fishing-fish-pelagos",
+      "fish",
+      { "pelagos-deepsea", "water" }
+    )
+  end
 end
 
 script.on_init(on_init)
 script.on_configuration_changed(on_init)
 
-local filter = { { filter = "name", name = DOCK_NAME }, { filter = "ghost_name", name = DOCK_NAME } }
--- Events
+local filter = { { filter = "name", name = DOCK_NAME }, { filter = "ghost_name", name = DOCK_NAME } } -- Events
 script.on_event(defines.events.on_gui_closed, function(event)
   if event.entity and event.entity.name == DOCK_NAME then
     check_recipe_requirements(event.entity, event.player_index)

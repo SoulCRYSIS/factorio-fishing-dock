@@ -1,9 +1,14 @@
 {
     "name": "fishing-dock",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "title": "Fishing Dock",
     "author": "SoulCRYSIS",
     "factorio_version": "2.0",
     "description": "A machine that release fishing boat to gather fish.",
-    "dependencies": []
+    "space_travel_required": true,
+    "dependencies": [
+      "base >= 2.0",
+      "space-age",
+      "? pelagos"
+    ]
   }

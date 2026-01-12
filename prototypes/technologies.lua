@@ -19,3 +19,10 @@ data:extend({
     },
   }
 })
+
+if mods["pelagos"] then
+  table.insert(
+    data.raw["technology"]["fishing-dock"].effects,
+    { type = "unlock-recipe", recipe = "fishing-fish-pelagos" }
+  )
+end

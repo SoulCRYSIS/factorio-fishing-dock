@@ -24,26 +24,45 @@ If you want to add your type of fish, it super easy
 local fishing_utils = require("__fishing-dock__.prototypes.utils")
 
 fishing_utils.create_fishing_content({
-  name = "fish",
+  fish_name = "fish",
+  recipe_name = "fishing-fish-pelagos",
   icon = "__base__/graphics/icons/fish.png",
-  energy = 10, -- Spawn cooldown
-  order = "a",
+  energy = 10,
+  order = "aa",
   ingredients = {
-    {type = "item", name = "biter-egg", amount = 1}
+    { type = "item", name = "copper-biter-egg", amount = 1 }
+  },
+  surface_conditions = {
+    {
+      property = "pressure",
+      min = 1809,
+      max = 1809,
+    }
   },
 })
+```
+
+Here are arguments list
+```
+fish_name string
+recipe_name? string default to "fishing-{name}"
+result_item_name? string default to "fishing-result-{name}"
+icon string Path to the icon
+ingredients data.IngredientPrototype[]
+energy? number Crafting time (determines spawn rate)
+order? string
+surface_conditions? data.SurfaceCondition[]
 ```
 3. In control side, add fish entity and spawnable tiles. Usually in on_init.
 ```
 local function on_init()
-  storage.fish_spawn_registry["fish"] = {
-    "water",
-    "deepwater",
-    "water-green",
-    "deepwater-green",
-    "water-shallow",
-    "deepwater-shallow",
-  }
+  remote.call(
+    "fishing_dock",
+    "register_fish",
+    "fishing-fish-pelagos",         -- Recipe name
+    "fish",                         -- Entity name
+    { "pelagos-deepsea", "water" }  -- Spawnable tiles
+  )
 end
 
 script.on_init(on_init)

@@ -1,18 +1,20 @@
 local utils = {}
 
 ---@class FishContentOptions
----@field name string The internal name of the fish entity (e.g. "tuna")
+---@field fish_name string
+---@field recipe_name? string default to "fishing-{name}"
+---@field result_item_name? string default to "fishing-result-{name}"
 ---@field icon string Path to the icon
----@field ingredients table[] Recipe ingredients
----@field energy number Crafting time (determines spawn rate)
----@field order string Item order
+---@field ingredients data.IngredientPrototype[]
+---@field energy? number Crafting time (determines spawn rate)
+---@field order? string
+---@field surface_conditions? data.SurfaceCondition[]
 
----Creates a fish entity, a caught item, and a fishing recipe
 ---@param options FishContentOptions
 function utils.create_fishing_content(options)
-  local fish_name = options.name
-  local item_name = "fishing-result-" .. fish_name
-  local recipe_name = "fishing-" .. fish_name -- STRICT NAMING CONVENTION
+  local fish_name = options.fish_name
+  local item_name = options.result_item_name or ("fishing-result-" .. fish_name)
+  local recipe_name = options.recipe_name or ("fishing-" .. fish_name)
 
   local icons = {
     {
@@ -55,7 +57,7 @@ function utils.create_fishing_content(options)
       },
       energy_required = options.energy or 10,
       enabled = false,
-      main_product = item_name,
+      surface_conditions = options.surface_conditions,
     }
   })
 end

@@ -1,0 +1,12 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 2026-01-12
+  Scripting:
+    - Expose remote interface for registering fish
+    - Change create prototypes util to be more flexible
+  Changes:
+    - Restrict normal fishing recipe to Nauvis
+  Bugfixes:
+    - Fix error where docks try to scan for deepwater-shallow tiles
+  Modding:
+    - Add fishing recipe using Pelagos copper biter egg
