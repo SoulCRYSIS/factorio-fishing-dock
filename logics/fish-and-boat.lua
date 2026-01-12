@@ -342,7 +342,7 @@ local function update_docks()
               local min_dist = math.huge
 
               local fish_list = dock.surface.find_entities_filtered {
-                name = "fish",
+                name = storage.fishing_recipe_mapping[dock.get_recipe().name],
                 position = dock.position,
                 radius = RADIUS
               }

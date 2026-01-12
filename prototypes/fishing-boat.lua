@@ -35,7 +35,7 @@ data:extend({
     icon = "__fishing-dock__/graphics/icons/fishing-boat.png",
     flags = { "placeable-neutral", "placeable-off-grid", "not-repairable", "not-on-map" },
     max_health = 500,
-    healing_per_tick = 10,
+    healing_per_tick = 2,
     subgroup = "agriculture",
     order = "cb",
     collision_box = { { -0.5, -0.8 }, { 0.5, 0.8 } },
@@ -64,28 +64,6 @@ data:extend({
           }
         }
       }
-    },
-    resistances = {
-      {
-        type = "fire",
-        percent = 100,
-      },
-      {
-        type = "physical",
-        percent = 100,
-      },
-      {
-        type = "explosion",
-        percent = 100,
-      },
-      {
-        type = "impact",
-        percent = 100,
-      },
-      {
-        type = "acid",
-        percent = 100,
-      },
     },
     light =
     {

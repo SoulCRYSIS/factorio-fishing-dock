@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.2
+Date: 2026-01-13
+  Scripting:
+    - Add subgroup argument to create prototypes util
+  Changes:
+    - Make fishing boat not immortal anymore
+  Bugfixes:
+    - Fix bug where it not running toward other type of fish
+---------------------------------------------------------------------------------------------------
 Version: 0.1.1
 Date: 2026-01-12
   Scripting:
@@ -8,5 +17,5 @@ Date: 2026-01-12
     - Restrict normal fishing recipe to Nauvis
   Bugfixes:
     - Fix error where docks try to scan for deepwater-shallow tiles
-  Modding:
+  Features:
     - Add fishing recipe using Pelagos copper biter egg

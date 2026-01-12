@@ -29,6 +29,7 @@ fishing_utils.create_fishing_content({
   icon = "__base__/graphics/icons/fish.png",
   energy = 10,
   order = "aa",
+  subgroup = "fishing",
   ingredients = {
     { type = "item", name = "copper-biter-egg", amount = 1 }
   },
@@ -47,6 +48,7 @@ Here are arguments list
 fish_name string
 recipe_name? string default to "fishing-{name}"
 result_item_name? string default to "fishing-result-{name}"
+subgroup? string default to "fishing"
 icon string Path to the icon
 ingredients data.IngredientPrototype[]
 energy? number Crafting time (determines spawn rate)
