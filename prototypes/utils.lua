@@ -2,14 +2,14 @@ local utils = {}
 
 ---@class FishContentOptions
 ---@field fish_name string
----@field recipe_name? string default to "fishing-{name}"
----@field result_item_name? string default to "fishing-result-{name}"
----@field subgroup? string default to "fishing"
+---@field recipe_name string? default to "fishing-{name}"
+---@field result_item_name string? default to "fishing-result-{name}"
+---@field subgroup string? default to "fishing"
 ---@field icon string Path to the icon
 ---@field ingredients data.IngredientPrototype[]
----@field energy? number Crafting time (determines spawn rate)
----@field order? string
----@field surface_conditions? data.SurfaceCondition[]
+---@field energy number? Crafting time (determines spawn rate)
+---@field order string?
+---@field surface_conditions data.SurfaceCondition[]?
 
 ---@param options FishContentOptions
 function utils.create_fishing_content(options)

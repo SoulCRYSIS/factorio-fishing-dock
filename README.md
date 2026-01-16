@@ -16,24 +16,27 @@ Don't worry too much about not getting 100% spawn rate, the algorithm will try t
 
 ## For developer
 
-If you want to add your type of fish, it super easy
+If you want to add your type of fish, it super easy.
 
-1. Add your fish item and entity like normal
-2. Use util (or just copy the inside code if you want more adjustment)
+After you add your fish item and entity like normal.
+
+### Add fishing mock prototypes
+Use util (or just copy the inside code if you want more adjustment)
 ```
 local fishing_utils = require("__fishing-dock__.prototypes.utils")
 
 fishing_utils.create_fishing_content({
   fish_name = "fish",
-  recipe_name = "fishing-fish-pelagos",
   icon = "__base__/graphics/icons/fish.png",
-  energy = 10,
-  order = "aa",
-  subgroup = "fishing",
   ingredients = {
     { type = "item", name = "copper-biter-egg", amount = 1 }
   },
-  surface_conditions = {
+  recipe_name = "fishing-fish-pelagos", -- Optional: default to "fishing-{fish_name}"
+  energy = 10,                          -- Optional: default 10
+  order = "aa",                         -- Optional
+  subgroup = "fishing",                 -- Optional: default "fishing"
+  
+  surface_conditions = {                -- Optional
     {
       property = "pressure",
       min = 1809,
@@ -43,30 +46,48 @@ fishing_utils.create_fishing_content({
 })
 ```
 
-Here are arguments list
-```
-fish_name string
-recipe_name? string default to "fishing-{name}"
-result_item_name? string default to "fishing-result-{name}"
-subgroup? string default to "fishing"
-icon string Path to the icon
-ingredients data.IngredientPrototype[]
-energy? number Crafting time (determines spawn rate)
-order? string
-surface_conditions? data.SurfaceCondition[]
-```
-3. In control side, add fish entity and spawnable tiles. Usually in on_init.
+### Register to logics
+In control side, add fish entity and spawnable tiles. Usually in on_init and on_configuration_changed.
 ```
 local function on_init()
   remote.call(
     "fishing_dock",
     "register_fish",
-    "fishing-fish-pelagos",         -- Recipe name
-    "fish",                         -- Entity name
-    { "pelagos-deepsea", "water" }  -- Spawnable tiles
+    "fishing-fish-pelagos", -- Recipe name
+    {
+      spawn_entity_name = "fish",
+      spawn_tiles = { "pelagos-deepsea", "water" }
+      target_entity_name = "fish",    -- Optional: default to spawn_entity_name
+      min_spawn_radius = 5,           -- Optional: default 5
+      max_spawn_radius = 20,          -- Optional: default 20
+      max_count = 15,                 -- Optional: default 15
+      spawn_angle = 1,                -- Optional: default 1 (full circle)
+      boat_radius = 24,               -- Optional: default 24 (same as radius visualization)
+      move_to_dock_after_spawn = true -- Optional: default false (if true, it will command the unit to move toward dock after spawn, only work with units that has commandable)
+    }
   )
 end
 
 script.on_init(on_init)
+script.on_configuration_changed(on_init)
 ```
-4. Done!!
+
+### Adding your custom dock type
+```
+local function on_init()
+  remote.call(
+    "fishing_dock",
+    "register_dcok",
+    "watchtower",
+    {
+      boat_entity_name = "galley",
+      seperation_distance = "40",
+      boat_collect_radius = "64",
+      boat_spawn_offset = 5 -- Offset from dock center, to avoid spawn inside the dock
+    }
+  )
+end
+
+script.on_init(on_init)
+script.on_configuration_changed(on_init)
+```
