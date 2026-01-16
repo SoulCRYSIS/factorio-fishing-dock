@@ -16,6 +16,7 @@ data:extend({
     effects = {
       { type = "unlock-recipe", recipe = "fishing-dock" },
       { type = "unlock-recipe", recipe = "fishing-fish" },
+      { type = "unlock-recipe", recipe = "fishing-bait" },
     },
   }
 })
@@ -24,5 +25,9 @@ if mods["pelagos"] then
   table.insert(
     data.raw["technology"]["fishing-dock"].effects,
     { type = "unlock-recipe", recipe = "fishing-fish-pelagos" }
+  )
+  table.insert(
+    data.raw["technology"]["fishing-dock"].effects,
+    { type = "unlock-recipe", recipe = "fishing-bait-pelagos" }
   )
 end

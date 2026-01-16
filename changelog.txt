@@ -1,6 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.4
+Date: 2026-01-16
+  Bugfixes:
+    - Fix game crash when fishing destroy
+---------------------------------------------------------------------------------------------------
 Version: 0.1.3
-Date: 2026-01-14
+Date: 2026-01-16
+  Changes:
+    - Use fishing bait instead of biter egg
   Scripting:
     - Add more register_fish arguments
     - Add api to register custom dock type

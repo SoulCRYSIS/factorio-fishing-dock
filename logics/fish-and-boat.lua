@@ -216,7 +216,7 @@ local function on_built(event)
 
   -- Check if it is a registered dock
   local dock_data = storage.dock_data[entity.name] or
-  (entity.type == "entity-ghost" and storage.dock_data[entity.ghost_name])
+      (entity.type == "entity-ghost" and storage.dock_data[entity.ghost_name])
   if not dock_data then return end
 
   local is_ghost = entity.name == "entity-ghost"
@@ -384,11 +384,11 @@ local function update_docks()
           radius = fish_data.boat_radius
         }
       end
-      
+
       if recipe and not fish_data then
         if dock.active then
           dock.active = false
-         game.print("[Fishing Dock] Error: Recipe '" .. recipe.name .. "' on dock " .. unit_number ..
+          game.print("[Fishing Dock] Error: Recipe '" .. recipe.name .. "' on dock " .. unit_number ..
             " is not registered. Disabling dock.")
         end
       elseif fish_data and dock_data then
@@ -472,47 +472,49 @@ local function update_docks()
               data.state = "leash"
               -- Wander if idle
             else
-              if data.state ~= "fishing" or not is_moving or not commandable.has_command and commandable.command.type ~= defines.command.go_to_location then
-                -- game.print("Finding nearest fish")
-                -- Move to nearest fish
-                local nearest_fish = nil
-                local min_dist = math.huge
+              if commandable.command ~= nil then
+                if data.state ~= "fishing" or not is_moving or commandable.command.type ~= defines.command.go_to_location then
+                  -- game.print("Finding nearest fish")
+                  -- Move to nearest fish
+                  local nearest_fish = nil
+                  local min_dist = math.huge
 
-                local fish_list = dock.surface.find_entities_filtered {
-                  name = fish_data.target_entity_name,
-                  position = dock.position,
-                  radius = boat_radius
-                }
+                  local fish_list = dock.surface.find_entities_filtered {
+                    name = fish_data.target_entity_name,
+                    position = dock.position,
+                    radius = boat_radius
+                  }
 
-                for _, fish in pairs(fish_list) do
-                  if fish.valid then
-                    local dist = util.distance(boat.position, fish.position)
-                    if dist < min_dist then
-                      min_dist = dist
-                      nearest_fish = fish
+                  for _, fish in pairs(fish_list) do
+                    if fish.valid then
+                      local dist = util.distance(boat.position, fish.position)
+                      if dist < min_dist then
+                        min_dist = dist
+                        nearest_fish = fish
+                      end
                     end
                   end
-                end
 
-                if nearest_fish then
-                  -- game.print("Moving to nearest fish: " .. nearest_fish.position.x .. ", " .. nearest_fish.position.y)
-                  commandable.set_command({
-                    type = defines.command.go_to_location,
-                    destination_entity = nearest_fish,
-                    distraction = defines.distraction.none,
-                    radius = 1,
-                    no_break = true,
-                  })
-                  data.state = "fishing"
-                else
-                  -- game.print("Wandering")
-                  commandable.set_command({
-                    type = defines.command.wander,
-                    radius = boat_radius / 2, -- Wander in short bursts
-                    distraction = defines.distraction.none,
-                    wander_in_group = false
-                  })
-                  data.state = "wandering"
+                  if nearest_fish then
+                    -- game.print("Moving to nearest fish: " .. nearest_fish.position.x .. ", " .. nearest_fish.position.y)
+                    commandable.set_command({
+                      type = defines.command.go_to_location,
+                      destination_entity = nearest_fish,
+                      distraction = defines.distraction.none,
+                      radius = 1,
+                      no_break = true,
+                    })
+                    data.state = "fishing"
+                  else
+                    -- game.print("Wandering")
+                    commandable.set_command({
+                      type = defines.command.wander,
+                      radius = boat_radius / 2, -- Wander in short bursts
+                      distraction = defines.distraction.none,
+                      wander_in_group = false
+                    })
+                    data.state = "wandering"
+                  end
                 end
               end
             end
@@ -548,7 +550,6 @@ local function update_docks()
           -- Spawn the fish
           for i = 1, count do
             if nearby_fish_count < fish_data.max_count + count then -- Allow slight overflow or check per spawn?
-              
               spawn_fish(dock, recipe_name)
               nearby_fish_count = nearby_fish_count +
                   1 -- Update local count to prevent massive overflow if multiple crafted
