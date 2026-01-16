@@ -152,7 +152,7 @@ local function spawn_fish(dock, recipe_name)
           type = defines.command.go_to_location,
           destination = get_spawn_pos(dock),
           distraction = defines.distraction.none,
-          radius = 5,
+          radius = 8,
         })
       end
 
