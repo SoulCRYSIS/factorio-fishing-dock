@@ -10,6 +10,7 @@ local utils = {}
 ---@field energy number? Crafting time (determines spawn rate)
 ---@field order string?
 ---@field surface_conditions data.SurfaceCondition[]?
+---@field allow_productivity boolean? default to true
 
 ---@param options FishContentOptions
 function utils.create_fishing_content(options)
@@ -42,6 +43,7 @@ function utils.create_fishing_content(options)
       stack_size = 50,
       spoil_ticks = 1,
       weight = 10000,
+      auto_recycle = false,
     },
     -- Spawn fish recipe
     {
@@ -59,6 +61,8 @@ function utils.create_fishing_content(options)
       energy_required = options.energy or 10,
       enabled = false,
       surface_conditions = options.surface_conditions,
+      auto_recycle = false,
+      allow_productivity = options.allow_productivity or true,
     }
   })
 end

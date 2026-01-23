@@ -44,11 +44,16 @@ data:extend({
     max_health = 200,
     collision_box = { { -1.8, -1.9 }, { 1.8, 1.8 } },
     selection_box = { { -2, -2 }, { 2, 2 } },
-    ingredient_count = 2,
+    ingredient_count = 1,
     max_item_product_count = 1,
+    trash_inventory_size = 1,
     crafting_speed = 1,
+    module_slots = 4,
     -- Allow placement on water/deepwater by NOT colliding with tile layers like `item`.
     -- Keep object-ish layers so the dock still blocks overlaps with other entities.
+    effect_receiver = { uses_beacon_effects = false },
+    allowed_effects = { "speed", "productivity" },
+    allowed_module_categories = { "productivity", "speed" },
     collision_mask = { layers = { object = true } },
     energy_usage = "100kW",
     energy_source = {
@@ -57,8 +62,8 @@ data:extend({
     crafting_categories = { "fishing" },
     tile_buildability_rules =
     {
-      { area = { { -1.9, 1.1 }, { 1.9, 1.9 } },  required_tiles = { layers = { ground_tile = true } },        colliding_tiles = { layers = { water_tile = true } }, remove_on_collision = true },
-      { area = { { -1.9, -4.9 }, { 1.9, 0.9 } }, required_tiles = { layers = { water_tile = true } },         remove_on_collision = true },
+      { area = { { -1.9, 1.1 }, { 1.9, 1.9 } },  required_tiles = { layers = { ground_tile = true } }, colliding_tiles = { layers = { water_tile = true } }, remove_on_collision = true },
+      { area = { { -1.9, -4.9 }, { 1.9, 0.9 } }, required_tiles = { layers = { water_tile = true } },  remove_on_collision = true },
     },
     graphics_set = {
       water_reflection = {

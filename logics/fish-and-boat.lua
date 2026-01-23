@@ -1,7 +1,66 @@
 local util = require("util")
 
+-- local sorted_qualities = nil
+-- local function get_sorted_qualities()
+--   if sorted_qualities then return sorted_qualities end
+--   local list = {}
+--   for name, p in pairs(prototypes.quality) do
+--     table.insert(list, { name = name, level = p.level })
+--   end
+--   table.sort(list, function(a, b) return a.level < b.level end)
+--   sorted_qualities = list
+--   return list
+-- end
+
+-- local function calculate_quality(base_quality_name, bonus, force)
+--   local current_name = base_quality_name or "normal"
+--   if not bonus or bonus <= 0 then return current_name end
+
+--   local qualities = get_sorted_qualities()
+--   local current_level = 0
+  
+--   -- Find current level
+--   for _, q in ipairs(qualities) do
+--     if q.name == current_name then
+--       current_level = q.level
+--       break
+--     end
+--   end
+
+--   local chance = bonus
+--   -- Max iterations to prevent infinite loops (though levels are finite)
+--   for _ = 1, 5 do
+--     if math.random() < chance then
+--       local next_quality = nil
+--       -- Find next unlocked quality
+--       for _, q in ipairs(qualities) do
+--         if q.level > current_level then
+--           if force.is_quality_unlocked(q.name) then
+--             next_quality = q
+--             break -- Assuming we jump to the immediate next unlocked quality
+--           end
+--         end
+--       end
+
+--       if next_quality then
+--         current_name = next_quality.name
+--         current_level = next_quality.level
+--         chance = chance * 0.1
+--       else
+--         break
+--       end
+--     else
+--       break
+--     end
+--   end
+
+--   return current_name
+-- end
+
 local function ensure_storage()
-  if not storage.fishing_docks then storage.fishing_docks = {} end
+  if not storage.fishing_docks then 
+    ---@type table<number, { dock: LuaEntity, boat: LuaEntity?, last_pos: MapPosition?, paused_by_logic: boolean?, state: string?, last_products_finished: number? }>
+    storage.fishing_docks = {} end
   if not storage.fish_spawn_data then
     ---@type table<string, RegisterFishOptions>
     storage.fish_spawn_data = {}
@@ -66,7 +125,7 @@ remote.add_interface("fishing_dock", {
       spawn_tiles = options.spawn_tiles,
       min_spawn_radius = options.min_spawn_radius or 5,
       max_spawn_radius = options.max_spawn_radius or 20,
-      max_count = options.max_count or 15,
+      max_count = options.max_count or 20,
       spawn_angle = options.spawn_angle or 1,
       boat_radius = options.boat_radius or 24,
       move_to_dock_after_spawn = options.move_to_dock_after_spawn or false
@@ -106,7 +165,7 @@ local function get_spawn_pos(dock)
   return { x = position.x + offset.x, y = position.y + offset.y }
 end
 
-local function spawn_fish(dock, recipe_name)
+local function spawn_fish(dock, recipe_name, recipe_quality)
   local min_dist = storage.fish_spawn_data[recipe_name].min_spawn_radius
   local max_dist = storage.fish_spawn_data[recipe_name].max_spawn_radius
   local allowed_tiles = storage.fish_spawn_data[recipe_name].spawn_tiles
@@ -127,8 +186,8 @@ local function spawn_fish(dock, recipe_name)
     facing_angle = -math.pi / 2 -- default north
   end
 
-  -- Try up to 3 times to find a valid spawn location
-  for i = 1, 3 do
+  -- Try up to 4 times to find a valid spawn location
+  for i = 1, 5 do
     local angle
     if spawn_angle >= 1 then
       -- Full circle spawn
@@ -144,9 +203,9 @@ local function spawn_fish(dock, recipe_name)
     local target_pos = { x = dock.position.x + dx, y = dock.position.y + dy }
 
     local tile = dock.surface.get_tile(target_pos)
-    if is_tile_valid_for_fish(tile, allowed_tiles) then
+    if is_tile_valid_for_fish(tile, allowed_tiles) and dock.surface.can_place_entity { name = fish_entity_name, position = target_pos } then
       dock.surface.create_entity { name = "water-splash", position = target_pos }
-      local fish = dock.surface.create_entity { name = fish_entity_name, position = target_pos }
+      local fish = dock.surface.create_entity { name = fish_entity_name, position = target_pos, quality = recipe_quality }
       if storage.fish_spawn_data[recipe_name].move_to_dock_after_spawn then
         fish.commandable.set_command({
           type = defines.command.go_to_location,
@@ -373,7 +432,7 @@ local function update_docks()
       end
 
       -- Check fish population for pausing logic
-      local recipe = dock.get_recipe()
+      local recipe, recipe_quality = dock.get_recipe()
       local fish_data = recipe and storage.fish_spawn_data[recipe.name]
 
       local nearby_fish_count = 0
@@ -395,8 +454,29 @@ local function update_docks()
         -- Boat Logic
         if boat and boat.valid then
           -- Check if dock is full or inactive
-          local inventory = dock.get_inventory(defines.inventory.furnace_result)
+          local inventory = dock.get_inventory(defines.inventory.crafter_trash) -- Use crafter_trash (output)
+          if not inventory then
+            -- Fallback or error? Actually for furnace it might be furnace_result or different index
+             inventory = dock.get_inventory(defines.inventory.furnace_result)
+          end
+
+          if not inventory then
+            game.print("[Fishing Dock] Error: Inventory not found for " .. dock.name)
+            return
+          end
           local is_full = inventory.is_full()
+          
+          -- Check if any stack is full
+          if not is_full then
+            for i = 1, #inventory do
+              local stack = inventory[i]
+              if stack.valid_for_read and stack.count >= stack.prototype.stack_size then
+                is_full = true
+                break
+              end
+            end
+          end
+
           local max_count = fish_data.max_count
 
           -- Check if we should pause (output full OR too many fish)
@@ -432,7 +512,10 @@ local function update_docks()
           local dist_to_dock = util.distance(boat.position, dock.position)
           local commandable = boat.commandable
 
-          -- game.print(commandable.command.type)
+          if not commandable then
+            game.print("[Fishing Dock] Error: Commandable not found for " .. boat.name)
+            return
+          end
 
           if is_full or (not is_active and not data.paused_by_logic) then
             -- Go back to dock and idle if full or inactive (and not paused by our logic)
@@ -501,8 +584,8 @@ local function update_docks()
                       type = defines.command.go_to_location,
                       destination_entity = nearest_fish,
                       distraction = defines.distraction.none,
-                      radius = 1,
                       no_break = true,
+                      radius = 0.5,
                     })
                     data.state = "fishing"
                   else
@@ -530,8 +613,41 @@ local function update_docks()
             for _, f in pairs(fish) do
               if f.valid then
                 local f_pos = f.position
-                if f.mine({ inventory = inventory }) then
-                  dock.surface.create_entity { name = "water-splash", position = f_pos }
+                local mineable = f.prototype.mineable_properties
+                if mineable and mineable.minable then
+                  local products = mineable.products
+                  local items_to_give = {}
+                  if products then
+                    for _, p in pairs(products) do
+                      if p.type == "item" then
+                        local amount= p.amount
+                        if not amount then
+                          amount = math.random(p.amount_min or 1, p.amount_max or 1)
+                        end
+                        local probability = p.probability or 1
+                        if math.random() < probability then
+                          -- local item_quality = calculate_quality(recipe_quality and recipe_quality.name, dock.effects.quality, dock.force)
+                          table.insert(items_to_give, { name = p.name, count = amount, quality = recipe_quality.name })
+                        end
+                      end
+                    end
+                  end
+
+                  local can_insert = true
+                  for _, item in pairs(items_to_give) do
+                    if not inventory.can_insert(item) then
+                      can_insert = false
+                      break
+                    end
+                  end
+
+                  if can_insert then
+                    for _, item in pairs(items_to_give) do
+                      inventory.insert(item)
+                    end
+                    f.destroy()
+                    dock.surface.create_entity { name = "water-splash", position = f_pos }
+                  end
                 end
               end
             end
@@ -545,12 +661,11 @@ local function update_docks()
 
         if current_products > last_products then
           local count = current_products - last_products
-          local recipe_name = recipe.name
 
           -- Spawn the fish
           for i = 1, count do
             if nearby_fish_count < fish_data.max_count + count then -- Allow slight overflow or check per spawn?
-              spawn_fish(dock, recipe_name)
+              spawn_fish(dock, recipe.name, recipe_quality.name)
               nearby_fish_count = nearby_fish_count +
                   1 -- Update local count to prevent massive overflow if multiple crafted
             end

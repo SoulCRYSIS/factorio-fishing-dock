@@ -12,7 +12,7 @@ Just place the dock on water edges (just like asteroid collector), a fishing boa
 
 The fishing dock is act like spawner, it will try to spawn fish everytime a craft succeeds. It can only spawn on to specific tiles (every nauvis water tiles for normal fish), so the more water, the more chance it will spawn (maximum at 100% when all tiles are water).
 
-Don't worry too much about not getting 100% spawn rate, the algorithm will try to spawn 3 times, which mean if you have water 40%, the spawn rate will be `1-(1-0.4)^3 = 78.4%`
+Don't worry too much about not getting 100% spawn rate, the algorithm will try to spawn 5 times, which mean if you have water 40%, the spawn rate will be `1-(1-0.4)^5 = 92.2%`
 
 ## For developer
 

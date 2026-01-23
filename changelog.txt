@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.5
+Date: 2026-01-24
+  Features:
+    - Fishing now support quality, quality bait get quality fish
+  Bugfixes:
+    - Fix bug where sometimes fish spawn on land edges
+---------------------------------------------------------------------------------------------------
 Version: 0.1.4
 Date: 2026-01-16
   Bugfixes:

@@ -27,11 +27,11 @@ data:extend({
     category = "organic-or-hand-crafting",
     icon = "__fishing-dock__/graphics/icons/fishing-bait.png",
     enabled = false,
-    energy_required = 8,
+    energy_required = 5,
     ingredients = {
-      { type = "item", name = "biter-egg",    amount = 5 },
+      { type = "item", name = "biter-egg",    amount = 1 },
       { type = "item", name = "raw-fish",     amount = 1 },
-      { type = "item", name = "copper-cable", amount = 1 },
+      { type = "item", name = "copper-cable", amount = 5 },
     },
     results = {
       { type = "item", name = "fishing-bait", amount = 1 }
@@ -81,11 +81,11 @@ if mods["pelagos"] then
       category = "organic-or-hand-crafting",
       icon = "__fishing-dock__/graphics/icons/fishing-bait.png",
       enabled = false,
-      energy_required = 8,
+      energy_required = 5,
       ingredients = {
-        { type = "item", name = "copper-biter-egg", amount = 5 },
-        { type = "item", name = "fermented-fish",   amount = 1 },
-        { type = "item", name = "copper-cable",     amount = 1 },
+        { type = "item", name = "copper-biter-egg", amount = 1 },
+        { type = "item", name = "fermented-fish",   amount = 2 },
+        { type = "item", name = "copper-cable",     amount = 5 },
       },
       results = {
         { type = "item", name = "fishing-bait", amount = 1 }
