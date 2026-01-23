@@ -35,7 +35,7 @@ fishing_utils.create_fishing_content({
   energy = 10,                          -- Optional: default 10
   order = "aa",                         -- Optional
   subgroup = "fishing",                 -- Optional: default "fishing"
-  
+  allow_productivity = true             -- Optional: default true
   surface_conditions = {                -- Optional
     {
       property = "pressure",
