@@ -79,23 +79,7 @@ local function is_tile_valid_for_fish(tile, allowed_tiles)
   return false
 end
 
-local function update_filters()
-  if not storage.dock_data then return end
-  local filters = {}
-  for name, _ in pairs(storage.dock_data) do
-    table.insert(filters, { filter = "name", name = name })
-    table.insert(filters, { filter = "ghost_name", name = name })
-  end
-
-  if #filters == 0 then return end
-
-  script.set_event_filter(defines.events.on_built_entity, filters)
-  script.set_event_filter(defines.events.on_robot_built_entity, filters)
-  script.set_event_filter(defines.events.on_player_mined_entity, filters)
-  script.set_event_filter(defines.events.on_robot_mined_entity, filters)
-  script.set_event_filter(defines.events.on_entity_died, filters)
-  script.set_event_filter(defines.events.script_raised_destroy, filters)
-end
+local update_filters
 
 ---@class RegisterFishOptions
 ---@field spawn_entity_name string
@@ -271,6 +255,7 @@ end
 
 local function on_built(event)
   local entity = event.created_entity or event.entity
+  game.print("on_built: " .. entity.name)
   if not entity or not entity.valid then return end
 
   -- Check if it is a registered dock
@@ -399,6 +384,24 @@ local function on_destroy(event)
     end
     storage.fishing_docks[entity.unit_number] = nil
   end
+end
+
+update_filters = function()
+  if not storage.dock_data then return end
+  local filters = {}
+  for name, _ in pairs(storage.dock_data) do
+    table.insert(filters, { filter = "name", name = name })
+    table.insert(filters, { filter = "ghost_name", name = name })
+  end
+
+  if #filters == 0 then return end
+
+  script.on_event(defines.events.on_built_entity, on_built, filters)
+  script.on_event(defines.events.on_robot_built_entity, on_built, filters)
+  script.on_event(defines.events.on_player_mined_entity, on_destroy, filters)
+  script.on_event(defines.events.on_robot_mined_entity, on_destroy, filters)
+  script.on_event(defines.events.on_entity_died, on_destroy, filters)
+  script.on_event(defines.events.script_raised_destroy, on_destroy, filters)
 end
 
 local function update_docks()
@@ -739,13 +742,5 @@ end)
 script.on_event(defines.events.on_entity_settings_pasted, function(event)
   check_recipe_requirements(event.destination, event.player_index)
 end)
-
-script.on_event(defines.events.on_robot_built_entity, on_built)
-script.on_event(defines.events.on_built_entity, on_built)
-
-script.on_event(defines.events.on_player_mined_entity, on_destroy)
-script.on_event(defines.events.on_robot_mined_entity, on_destroy)
-script.on_event(defines.events.on_entity_died, on_destroy)
-script.on_event(defines.events.script_raised_destroy, on_destroy)
 
 script.on_nth_tick(60, update_docks)
