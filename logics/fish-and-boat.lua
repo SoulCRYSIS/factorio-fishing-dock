@@ -255,7 +255,6 @@ end
 
 local function on_built(event)
   local entity = event.created_entity or event.entity
-  game.print("on_built: " .. entity.name)
   if not entity or not entity.valid then return end
 
   -- Check if it is a registered dock
@@ -689,7 +688,7 @@ local function on_init()
     "register_dock",
     "fishing-dock",
     {
-      boat_entity_name = "fishing-boat",
+      boat_entity_name = "fishing-boat-unit",
       seperation_distance = 24,
       boat_collect_radius = 3,
       boat_spawn_offset = 3

@@ -31,7 +31,7 @@ data:extend({
   ---@type data.UnitPrototype
   {
     type = "unit",
-    name = "fishing-boat",
+    name = "fishing-boat-unit",
     icon = "__fishing-dock__/graphics/icons/fishing-boat.png",
     flags = { "placeable-neutral", "placeable-off-grid", "not-repairable", "not-on-map" },
     max_health = 500,
