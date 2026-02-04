@@ -1,8 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.8
 Date: 2026-02-04
-  Compatibility:
-    - Support none space-age gameplay
+  Scripting:
+    - Provide api to read all fishing recipes and results
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.7
 Date: 2026-01-26
