@@ -1,4 +1,7 @@
-local utils = {}
+local utils = {
+  all_fishing_recipes = {},
+  all_fishing_results = {},
+}
 
 ---@class FishContentOptions
 ---@field fish_name string
@@ -17,6 +20,8 @@ function utils.create_fishing_content(options)
   local fish_name = options.fish_name
   local item_name = options.result_item_name or ("fishing-result-" .. fish_name)
   local recipe_name = options.recipe_name or ("fishing-" .. fish_name)
+  table.insert(utils.all_fishing_recipes, recipe_name)
+  table.insert(utils.all_fishing_results, item_name)
 
   local icons = {
     {

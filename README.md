@@ -91,3 +91,16 @@ end
 script.on_init(on_init)
 script.on_configuration_changed(on_init)
 ```
+
+### Read all the fishing recipes and mock item results
+```
+local fishing_utils = require("__fishing-dock__.prototypes.utils")
+
+for _, item in pairs(fishing_utils.all_fishing_results) do
+  -- Do something
+end
+
+for _, recipe in pairs(fishing_utils.all_fishing_recipes) do
+  -- Do something
+end
+```
