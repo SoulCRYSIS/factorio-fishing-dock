@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.9
+Date: 2026-03-02
+  Scripting:
+    - Add crafting category argument to create prototypes util
+  Graphics:
+    - Move hook icon to top-left
+---------------------------------------------------------------------------------------------------
 Version: 0.1.8
 Date: 2026-02-04
   Scripting:

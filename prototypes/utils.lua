@@ -8,6 +8,7 @@ local utils = {
 ---@field recipe_name string? default to "fishing-{name}"
 ---@field result_item_name string? default to "fishing-result-{name}"
 ---@field subgroup string? default to "fishing"
+---@field crafting_category string? default to "fishing"
 ---@field icon string Path to the icon
 ---@field ingredients data.IngredientPrototype[]
 ---@field energy number? Crafting time (determines spawn rate)
@@ -54,7 +55,7 @@ function utils.create_fishing_content(options)
     {
       type = "recipe",
       name = recipe_name,
-      category = "fishing",
+      category = options.crafting_category or "fishing",
       subgroup = options.subgroup or "fishing",
       order = options.order,
       icons = icons,

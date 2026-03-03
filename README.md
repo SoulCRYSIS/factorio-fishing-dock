@@ -1,3 +1,6 @@
+[![](https://img.shields.io/badge/Discord-Community-blue?style=for-the-badge)](https://discord.gg/FhUZpcvUhn)
+^^^ Feedbacks are very welcome, make the mod great together
+
 ## Overview
 
 This mod propose a new way to get fish, main concept is to make it feel unique and interesting as possible.
@@ -35,6 +38,7 @@ fishing_utils.create_fishing_content({
   energy = 10,                          -- Optional: default 10
   order = "aa",                         -- Optional
   subgroup = "fishing",                 -- Optional: default "fishing"
+  crafting_category = "fishing"         -- Optional: default "fishing"
   allow_productivity = true             -- Optional: default true
   surface_conditions = {                -- Optional
     {
